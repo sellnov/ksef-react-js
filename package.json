@@ -1,5 +1,5 @@
 {
-    "name": "sellnov/ksef-react-js",
+    "name": "@sellnov/ksef-react-js",
     "version": "1.0.0",
     "description": "React wrapper for sellnov/ksef-js library",
     "type": "module",
@@ -7,7 +7,7 @@
     "peerDependencies": {
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
-        "sellnov/ksef-js": "*"
+        "@sellnov/ksef-js": "*"*"
     },
     "dependencies": {
         "axios": "^1.7.9"
