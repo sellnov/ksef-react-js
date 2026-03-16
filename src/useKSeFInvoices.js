@@ -34,6 +34,14 @@ export function useKSeFInvoices(initialFilters = {}, initialParams = {}) {
         [client, isAuthenticated, filters, params],
     );
 
+    const downloadInvoice = useCallback(
+        async (ksefNumber) => {
+            if (!isAuthenticated || !ksefNumber) return;
+            return await client.invoices.download(ksefNumber);
+        },
+        [client, isAuthenticated],
+    );
+
     useEffect(() => {
         if (isAuthenticated) {
             fetchInvoices();
@@ -45,6 +53,7 @@ export function useKSeFInvoices(initialFilters = {}, initialParams = {}) {
         isLoading,
         error,
         fetchInvoices,
+        downloadInvoice,
         filters,
         setFilters,
         params,
