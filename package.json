@@ -7,7 +7,7 @@
     "peerDependencies": {
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
-        "@sellnov/ksef-js": "*"*"
+        "@sellnov/ksef-js": "*"
     },
     "dependencies": {
         "axios": "^1.7.9"

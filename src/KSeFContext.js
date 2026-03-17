@@ -1,5 +1,12 @@
-import { createContext, useMemo, useState, useEffect, useCallback, useContext } from 'react';
-import { KSeFClient } from 'sellnov/ksef-js';
+import {
+    createContext,
+    useState,
+    useEffect,
+    useCallback,
+    useContext,
+    createElement,
+} from 'react';
+import { KSeFClient } from '@sellnov/ksef-js';
 
 const KSeFContext = createContext(null);
 
@@ -16,12 +23,15 @@ export function KSeFProvider({ config = {}, children }) {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Memoize the client instance to avoid recreation on every render
-    const client = useMemo(() => new KSeFClient(config), [config]);
+    const [client, setClient] = useState(() => new KSeFClient(config));
 
-    const updateSessionStatus = useCallback(async () => {
+    useEffect(() => {
+        setClient(new KSeFClient(config));
+    }, [config?.baseUrl, config?.test, config?.token]);
+
+    const updateSessionStatus = useCallback(async (clientToCheck = client) => {
         try {
-            const status = await client.sessionStatus();
+            const status = await clientToCheck.sessionStatus();
             setSession(status);
             setIsAuthenticated(!!status);
         } catch (err) {
@@ -38,8 +48,34 @@ export function KSeFProvider({ config = {}, children }) {
             setIsLoading(true);
             setError(null);
             try {
-                const result = await client.login(nip, token);
-                await updateSessionStatus();
+                let certBase64 = config?.ksefTokenEncryptionCertificate;
+                if (!certBase64) {
+                    const baseUrl = config?.publicKeyCertificatesUrl ?? config?.baseUrl;
+                    if (baseUrl) {
+                        const url = baseUrl.endsWith("/")
+                            ? `${baseUrl}security/public-key-certificates`
+                            : `${baseUrl}/security/public-key-certificates`;
+                        const resp = await fetch(url);
+                        if (resp.ok) {
+                            const keys = await resp.json();
+                            const found = Array.isArray(keys)
+                                ? keys.find(k => Array.isArray(k?.usage) && k.usage.includes("KsefTokenEncryption"))
+                                : null;
+                            certBase64 = found?.certificate ?? null;
+                        }
+                    }
+                }
+
+                const configuredClient = new KSeFClient({
+                    ...config,
+                    nip,
+                    ksefToken: token,
+                    ...(certBase64 ? { ksefTokenEncryptionCertificate: certBase64 } : {}),
+                });
+                setClient(configuredClient);
+
+                const result = await configuredClient.login();
+                await updateSessionStatus(configuredClient);
                 return result;
             } catch (err) {
                 setError(err);
@@ -49,7 +85,7 @@ export function KSeFProvider({ config = {}, children }) {
                 setIsLoading(false);
             }
         },
-        [client, updateSessionStatus],
+        [config, updateSessionStatus],
     );
 
     const logout = useCallback(async () => {
@@ -66,8 +102,12 @@ export function KSeFProvider({ config = {}, children }) {
     }, [client]);
 
     useEffect(() => {
-        updateSessionStatus();
-    }, [updateSessionStatus]);
+        if (config?.token) {
+            updateSessionStatus();
+            return;
+        }
+        setIsLoading(false);
+    }, [config?.token, updateSessionStatus]);
 
     const value = {
         client,
@@ -80,7 +120,7 @@ export function KSeFProvider({ config = {}, children }) {
         refreshSession: updateSessionStatus,
     };
 
-    return <KSeFContext.Provider value={value}>{children}</KSeFContext.Provider>;
+    return createElement(KSeFContext.Provider, { value }, children);
 }
 
 /**

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useKSeF } from './KSeFContext.js';
+import { useKSeF } from './KSeFContext';
 
 /**
  * Hook for managing KSeF invoices with React state.
@@ -24,7 +24,7 @@ export function useKSeFInvoices(initialFilters = {}, initialParams = {}) {
             setError(null);
             try {
                 const result = await client.invoices.queryMetadata(f, p);
-                setInvoices(result.invoiceHeaders || []);
+                setInvoices(result.invoices || result.invoiceHeaders || []);
             } catch (err) {
                 setError(err);
             } finally {

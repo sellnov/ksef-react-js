@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useKSeF } from './KSeFContext.js';
+import { useKSeF } from './KSeFContext';
 
 /**
  * Hook for downloading a single KSeF invoice content (XML).
